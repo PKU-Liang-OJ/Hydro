@@ -1,0 +1,47 @@
+<!--
+Source: https://raw.githubusercontent.com/hydro-dev/hydro-dev.github.io/docs/content/docs/Hydro/system/cdn.mdx
+Docs URL: https://hydro.js.org/zh/docs/Hydro/system/cdn
+Fetched: 2026-05-21T15:45:42.791Z
+Asset policy: image files are not mirrored; Markdown image links point to remote sources.
+-->
+
+---
+title: 使用内容分发网络
+---
+
+如您希望改善 Hydro 的访问质量，在您的服务器带宽较小的情况下，您可以考虑使用内容分发网络，即 CDN ，通常情况下您仅需设置资源 CDN 即可大幅度改善访问质量，关于如何使用内容分发网络和使用中的任何问题请联系各大云厂商。
+
+## 资源 CDN
+
+创建并配置好资源 CDN ，在控制面板中将 `server.cdn` 设置项修改为 CDN 域名。（如 `https://cdn.hydro.ac/`，以 `/` 结尾）。  
+
+CDN 的回源地址配置为源站，缓存时间可按需设置（推荐一个星期或更久）并放行 CORS 和 Referer（可能名为防盗链），设置允许空 Referer 请求。
+
+## 全站 CDN
+
+如果您预算充足，可以使用全站 CDN。
+
+> [!WARNING]
+
+全站 CDN 配置较为繁琐，如您没有相关使用经验请仅建立并配置资源 CDN ，配置资源 CDN 在大部分情况下即可大幅度改善访问质量。
+因各服务商全站 CDN 配置方法不同，配置过程不同，需要配置的内容较多，**以下仅为参考配置**，如果有任何问题建议先查阅云服务商文档及咨询云服务商工程师。
+
+> [!WARNING]
+
+配置全站 CDN 时需要启用 CDN 的 WebSocket 支持（不同服务商开启方式可能不同，且可能额外收费），否则会导致评测状态无法自动更新/IDE无法使用等等问题。  
+请确认仅缓存了资源文件！否则可能导致用户登录状态混乱。
+
+缓存设置可以参考以下设置：
+
+| 类型     | 内容                | 缓存行为 |
+| -------- | ------------------- | -------- |
+| 全部文件 | 全部文件              | 遵循源站 |
+| 文件后缀 | jpg,js,png,css,gif  | 缓存一天 |
+
+同时设置添加回源HTTP请求头
+
+| 头部参数      | 头部取值                              |
+| ------------- | ------------------------------------- |
+| X-Forward-For | 参考所使用服务商CDN文档来设置用户来源IP |
+
+且您应当修改系统设置中的 `server.xff` 值为 `X-Forwarded-For`，该设置是为了能够让系统正确获取到用户的IP地址。
