@@ -79,7 +79,11 @@
           {% if tdoc %}
             <dt>{{ _('Homework') if tdoc.rule == 'homework' else _('Contest') }}</dt>
             <dd>
-              <a href="{{ url('homework_detail' if tdoc.rule == 'homework' else 'contest_detail', tid=tdoc.docId) }}">{{ tdoc.title }}</a>
+              {% if tdoc.rule == 'homework' %}
+                {{ tdoc.title }}
+              {% else %}
+                <a href="{{ url('contest_detail', tid=tdoc.docId) }}">{{ tdoc.title }}</a>
+              {% endif %}
             </dd>
           {% endif %}
           {% if pdoc.config.type != 'objective' %}

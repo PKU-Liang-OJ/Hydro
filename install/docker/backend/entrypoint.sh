@@ -2,9 +2,7 @@
 
 ROOT=/root/.hydro
 
-if [ ! -f "$ROOT/addon.json" ]; then
-    echo '["@hydrooj/ui-default"]' > "$ROOT/addon.json"
-fi
+node -e "const fs=require('fs');const p='$ROOT/addon.json';let a=[];try{a=JSON.parse(fs.readFileSync(p,'utf8'))}catch{};a=a.filter((x)=>!['@hydrooj/ui-default','@hydrooj/language-server'].includes(x));for(const x of ['/opt/hydro/packages/ui-default','/opt/hydro/language-server'])if(!a.includes(x))a.push(x);fs.writeFileSync(p,JSON.stringify(a,null,2));"
 
 if [ ! -f "$ROOT/config.json" ]; then
     echo '{"host": "oj-mongo", "port": "27017", "name": "hydro", "username": "", "password": ""}' > "$ROOT/config.json"

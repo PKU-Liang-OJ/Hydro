@@ -78,7 +78,7 @@
                   <span class="problem__tag-item icon icon-stopwatch" style="font-size: .75rem;margin: 0;padding: 0 5px!important;">{{ pdict[pid].config.timeMax if pdict[pid].config.timeMax == pdict[pid].config.timeMin else pdict[pid].config.timeMin+'~'+pdict[pid].config.timeMax }}ms</span>
                   <span class="problem__tag-item icon icon-comparison" style="font-size: .75rem;margin: 0;padding: 0 5px!important;">{{ pdict[pid].config.memoryMax if pdict[pid].config.memoryMax == pdict[pid].config.memoryMin else pdict[pid].config.memoryMin+'~'+pdict[pid].config.memoryMax }}MiB</span>
                 {% endif %}
-                {% if pdict[pid].config.type != 'objective' %}
+                {% if pdict[pid].config.type != 'objective' and tsdoc and tsdoc.attend and model.contest.isOngoing(tdoc, tsdoc) %}
                   <a href="{{ url('problem_submit', pid=pid, query={tid:tdoc.docId}) }}" target="_blank" class="typo-a" style="float: right;"><span class="icon icon-send">{{ _('Submit') }}</span></a>
                 {% endif %}
               </td>
@@ -129,84 +129,6 @@
         </table>
       {% endif %}
       </div>
-    </div>
-    <div class="section section--clarifications">
-      <div class="section__header">
-        <h1 class="section__title">{{ _('Contest Clarifications') }}</h1>
-      </div>
-      <div class="section__body">
-      {% if not tcdocs.length %}
-        {{ nothing.render('Oh, there is no clarification!', compact=true) }}
-      {% else %}
-      <ul class="dczcomments__list">
-        {% for doc in tcdocs %}
-        <li class="dczcomments__item">
-          <div class="media">
-            <div class="media__body top">
-              <div class="clearfix">
-                <div class="supplementary dczcomments__supplementary">
-                  {{_('Subject') }}: {{ contest.render_clarification_subject(tdoc,pdict,doc.subject) }} | {% if doc.owner == 0 %}<b>{{ _('Jury') }}</b>{% else %}{{ user.render_inline(udict[doc.owner], badge=false) }}{% endif %} @ {{ datetimeSpan(doc._id)|safe }}
-                </div>
-              </div>
-              <div class="typo richmedia" data-emoji-enabled>
-                {{ doc['content']|markdown|safe }}
-              </div>
-            </div>
-          </div>
-          <ul class="dczcomments__replies">
-          {%- for rdoc in doc['reply'] -%}
-            <li class="dczcomments__reply">
-              <div class="media">
-                <div class="media__left top">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
-                <div class="media__body top">
-                  <div class="clearfix">
-                    <div class="supplementary dczcomments__supplementary">
-                      <b>{{ _('Jury') }}</b> @ {{ datetimeSpan(rdoc['_id'])|safe }}
-                    </div>
-                  </div>
-                  <div class="typo richmedia" data-emoji-enabled>
-                    {{ rdoc['content']|markdown|safe }}
-                  </div>
-                </div>
-              </div>
-            </li>
-          {%- endfor -%}
-          </ul>
-        </li>
-        {% endfor %}
-      </ul>
-      {% endif %}
-      </div>
-      {% if tsdoc.attend %}
-      <div class="section__header">
-        <h1 class="section__title">{{ _('Send Clarification Request') }}</h1>
-      </div>
-      <div class="section__body typo">
-        <form method="post">
-          <input type="hidden" name="operation" value="clarification">
-          <div class="row">
-            <div class="medium-12 columns form__item">
-              <label>
-                {{ _('Subject') }}
-                <select name="subject" class="select">
-                  <option value="0">{{ _('General Issue') }}</option>
-                  <option value="-1">{{ _('Technical Issue') }}</option>
-                  {% for pid in tdoc.pids %}
-                  <option value="{{ pid }}">{{ utils.getAlphabeticId(loop.index0) }}. {{ pdict[pid].title }}</option>
-                  {% endfor %}
-                </select>
-              </label>
-            </div>
-            <div class="medium-12 columns form__item">
-              <label>
-                {{ _('Content') }}
-                <textarea name="content" class="textbox" data-markdown required></textarea>
-              </label>
-            </div>
-          </div>
-          <button type="submit" class="rounded primary button">{{ _('Submit') }}</button>
-      </div>
-      {% endif %}
     </div>
   </div>
   <div class="medium-3 columns" data-sticky="large">

@@ -1,4 +1,3 @@
-import { load } from 'js-yaml';
 import { Dictionary } from 'lodash';
 import moment from 'moment-timezone';
 import Schema from 'schemastery';
@@ -10,7 +9,6 @@ import {
 import type { DomainDoc } from '../interface';
 import avatar from '../lib/avatar';
 import { PERM, PERMS_BY_FAMILY, PRIV } from '../model/builtin';
-import * as discussion from '../model/discussion';
 import domain from '../model/domain';
 import MessageModel from '../model/message';
 import * as oplog from '../model/oplog';
@@ -71,20 +69,6 @@ class DomainDashboardHandler extends ManageHandler {
         const owner = await user.getById(this.domain._id, this.domain.owner);
         this.response.template = 'domain_dashboard.html';
         this.response.body = { domain: this.domain, owner };
-    }
-
-    async postInitDiscussionNode({ domainId }) {
-        const nodes = load(system.get('discussion.nodes'));
-        await discussion.flushNodes(domainId);
-        for (const category of Object.keys(nodes)) {
-            for (const item of nodes[category]) {
-                // eslint-disable-next-line no-await-in-loop
-                const curr = await discussion.getNode(domainId, item.name);
-                // eslint-disable-next-line no-await-in-loop
-                if (!curr) await discussion.addNode(domainId, item.name, category, item.pic ? { pic: item.pic } : undefined);
-            }
-        }
-        this.back();
     }
 
     @requireSudo

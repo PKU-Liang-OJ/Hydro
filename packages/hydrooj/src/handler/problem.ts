@@ -305,7 +305,6 @@ export class ProblemDetailHandler extends ContestDetailBaseHandler {
         if (tid) {
             if (!this.tdoc?.pids?.includes(this.pdoc.docId)) throw new ContestNotFoundError(domainId, tid);
             if (contest.isNotStarted(this.tdoc)) throw new ContestNotLiveError(tid);
-            if (!contest.isDone(this.tdoc, this.tsdoc) && (!this.tsdoc?.attend || !this.tsdoc.startAt)) throw new ContestNotAttendedError(tid);
             // Delete problem-related info in contest mode
             if (this.pdoc.tag) this.pdoc.tag.length = 0;
             delete this.pdoc.nAccept;
@@ -462,7 +461,15 @@ export class ProblemDetailHandler extends ContestDetailBaseHandler {
 export class ProblemSubmitHandler extends ProblemDetailHandler {
     @param('tid', Types.ObjectId, true)
     async prepare(domainId: string, tid?: ObjectId) {
-        if (tid && !contest.isOngoing(this.tdoc, this.tsdoc)) throw new ContestNotLiveError(this.tdoc.docId);
+        if (tid) {
+            this.checkPriv(PRIV.PRIV_USER_PROFILE);
+            if (!this.tsdoc?.attend) throw new ContestNotAttendedError(domainId, tid);
+            if (this.tsdoc.attend && !this.tsdoc.startAt && contest.isOngoing(this.tdoc)) {
+                await contest.setStatus(domainId, tid, this.user._id, { startAt: new Date() });
+                this.tsdoc.startAt = new Date();
+            }
+            if (!contest.isOngoing(this.tdoc, this.tsdoc)) throw new ContestNotLiveError(this.tdoc.docId);
+        }
         if (typeof this.pdoc.config === 'string') throw new ProblemConfigError();
         if (this.pdoc.config.langs && !this.pdoc.config.langs.length) throw new ProblemConfigError();
     }

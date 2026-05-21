@@ -7,9 +7,17 @@
     <div class="typo section__body no-media">
       <ul>
         {% for tdoc in tdocs %}
-        <li><a class="contest-type--{{ tdoc.rule }}" href="{{ url('contest_detail' if tdoc.rule !== 'homework' else 'homework_detail', tid=tdoc.docId) }}">
-          {{ tdoc.title }} <span class="contest-type-tag"><span class="icon icon-award"></span>{{ _(model.contest.RULES[tdoc['rule']].TEXT) }}</span>
-        </a></li>
+        <li>
+          {% if tdoc.rule == 'homework' %}
+            <span class="contest-type--{{ tdoc.rule }}">
+              {{ tdoc.title }} <span class="contest-type-tag"><span class="icon icon-award"></span>{{ _(model.contest.RULES[tdoc['rule']].TEXT) }}</span>
+            </span>
+          {% else %}
+            <a class="contest-type--{{ tdoc.rule }}" href="{{ url('contest_detail', tid=tdoc.docId) }}">
+              {{ tdoc.title }} <span class="contest-type-tag"><span class="icon icon-award"></span>{{ _(model.contest.RULES[tdoc['rule']].TEXT) }}</span>
+            </a>
+          {% endif %}
+        </li>
         {% endfor %}
       </ul>
     </div>

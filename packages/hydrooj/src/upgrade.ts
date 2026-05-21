@@ -186,7 +186,7 @@ export const coreScripts: MigrationScript[] = [
             await system.set('hydrooj.homepage', yaml.dump([
                 { width: 9, bulletin: true, ...data },
                 {
-                    width: 3, hitokoto: true, starred_problems: 50, discussion_nodes: true, suggestion: true,
+                    width: 3, starred_problems: 50, suggestion: true,
                 },
             ]));
         }

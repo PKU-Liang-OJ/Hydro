@@ -33,6 +33,8 @@ import {
 } from '../service/server';
 import { camelCase, md5 } from '../utils';
 
+const disabledHomepageSections = new Set(['discussion', 'discussion_nodes', 'hitokoto', 'homework', 'training']);
+
 export class HomeHandler extends Handler {
     uids = new Set<number>();
 
@@ -152,6 +154,7 @@ export class HomeHandler extends Handler {
             const tasks = [];
             for (const name in column) {
                 if (name === 'width') continue;
+                if (disabledHomepageSections.has(name)) continue;
                 const func = `get${camelCase(name).replace(/^[a-z]/, (i) => i.toUpperCase())}`;
                 if (!this[func]) tasks.push([name, column[name]]);
                 else {

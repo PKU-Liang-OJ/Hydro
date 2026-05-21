@@ -19,7 +19,6 @@ import { PERM, PRIV, STATUS } from '../model/builtin';
 import * as contest from '../model/contest';
 import * as discussion from '../model/discussion';
 import * as document from '../model/document';
-import message from '../model/message';
 import * as oplog from '../model/oplog';
 import problem from '../model/problem';
 import record from '../model/record';
@@ -127,7 +126,7 @@ export class ContestDetailBaseHandler extends Handler {
             {
                 name: 'contest_problemlist',
                 args: { tid, prefix: 'contest_problemlist' },
-                checker: () => this.tsdoc?.attend || contest.isDone(this.tdoc),
+                checker: () => !contest.isNotStarted(this.tdoc),
             },
             {
                 name: 'contest_print',
@@ -294,14 +293,12 @@ export class ContestProblemListHandler extends ContestDetailBaseHandler {
     @param('tid', Types.ObjectId)
     async get(domainId: string, tid: ObjectId) {
         if (contest.isNotStarted(this.tdoc)) throw new ContestNotLiveError(domainId, tid);
-        if (!this.tsdoc?.attend && !contest.isDone(this.tdoc)) throw new ContestNotAttendedError(domainId, tid);
-        const [pdict, udict, tcdocs] = await Promise.all([
+        const [pdict, udict] = await Promise.all([
             problem.getList(domainId, this.tdoc.pids, true, true, problem.PROJECTION_CONTEST_LIST),
             user.getList(domainId, [this.tdoc.owner, this.user._id]),
-            contest.getMultiClarification(domainId, tid, this.user._id),
         ]);
         this.response.body = {
-            pdict, psdict: {}, udict, rdict: {}, tdoc: this.tdoc, tcdocs,
+            pdict, psdict: {}, udict, rdict: {}, tdoc: this.tdoc,
         };
         this.response.template = 'contest_problemlist.html';
         this.response.body.showScore = Object.values(this.tdoc.score || {}).some((i) => i && i !== 100);
@@ -342,23 +339,6 @@ export class ContestProblemListHandler extends ContestDetailBaseHandler {
         }
     }
 
-    @param('tid', Types.ObjectId)
-    @param('content', Types.Content)
-    @param('subject', Types.Int)
-    async postClarification(domainId: string, tid: ObjectId, content: string, subject: number) {
-        if (!this.tsdoc?.attend) throw new ContestNotAttendedError(domainId, tid);
-        if (!contest.isOngoing(this.tdoc)) throw new ContestNotLiveError(domainId, tid);
-        await this.limitRate('add_discussion', 3600, 60);
-        await contest.addClarification(domainId, tid, this.user._id, content, this.request.ip, subject);
-        if (!this.user.own(this.tdoc)) {
-            await message.send(1, (this.tdoc.maintainer || []).concat(this.tdoc.owner), JSON.stringify({
-                message: 'Contest {0} has a new clarification about {1}, please go to contest clarifications page to reply.',
-                params: [this.tdoc.title, subject > 0 ? `#${this.tdoc.pids.indexOf(subject) + 1}` : 'the contest'],
-                url: this.url('contest_clarification', { tid }),
-            }), message.FLAG_I18N | message.FLAG_UNREAD);
-        }
-        this.back();
-    }
 }
 
 export class ContestEditHandler extends Handler {
@@ -629,57 +609,6 @@ export class ContestManagementHandler extends ContestManagementBaseHandler {
     }
 }
 
-class ContestClarificationHandler extends ContestManagementBaseHandler {
-    @param('tid', Types.ObjectId)
-    async get(domainId: string, tid: ObjectId) {
-        const tcdocs = await contest.getMultiClarification(domainId, tid);
-        this.response.body = {
-            tdoc: this.tdoc,
-            tsdoc: this.tsdoc,
-            owner_udoc: await user.getById(domainId, this.tdoc.owner),
-            pdict: await problem.getList(domainId, this.tdoc.pids, true, true, [...problem.PROJECTION_CONTEST_LIST, 'tag']),
-            tcdocs,
-            udict: await user.getListForRender(
-                domainId, tcdocs.map((i) => i.owner),
-                this.user.hasPerm(PERM.PERM_VIEW_USER_PRIVATE_INFO),
-            ),
-        };
-        this.response.pjax = 'partials/contest_clarification.html';
-        this.response.template = 'contest_clarification.html';
-    }
-
-    @param('tid', Types.ObjectId)
-    @param('content', Types.Content)
-    @param('did', Types.ObjectId, true)
-    @param('subject', Types.Int, true)
-    async postClarification(domainId: string, tid: ObjectId, content: string, did: ObjectId, subject = 0) {
-        if (did) {
-            const tcdoc = await contest.getClarification(domainId, did);
-            await Promise.all([
-                contest.addClarificationReply(domainId, did, 0, content, this.request.ip),
-                message.send(1, tcdoc.owner, JSON.stringify({
-                    message: 'Contest {0} jury replied to your clarification, please go to contest page to view.',
-                    params: [this.tdoc.title],
-                    url: this.url('contest_problemlist', { tid }),
-                }), message.FLAG_I18N | message.FLAG_ALERT),
-            ]);
-        } else {
-            const tsdocs = await contest.getMultiStatus(domainId, { docId: tid, subscribe: 1 }).toArray();
-            const uids = Array.from<number>(new Set(tsdocs.map((tsdoc) => tsdoc.uid)));
-            const flag = contest.isOngoing(this.tdoc) ? message.FLAG_ALERT : message.FLAG_UNREAD;
-            await Promise.all([
-                contest.addClarification(domainId, tid, 0, content, this.request.ip, subject),
-                message.send(1, uids, JSON.stringify({
-                    message: 'Broadcast message from contest {0}:\n{1}',
-                    params: [this.tdoc.title, content],
-                    url: this.url('contest_problemlist', { tid }),
-                }), flag | message.FLAG_I18N),
-            ]);
-        }
-        this.back();
-    }
-}
-
 export class ContestFileDownloadHandler extends ContestDetailBaseHandler {
     @param('tid', Types.ObjectId)
     @param('filename', Types.Filename)
@@ -927,7 +856,6 @@ export async function apply(ctx: Context) {
     // Support for DOMJudge printfile
     ctx.Route('contest_print_alt', '/contest/:tid/api/printing/team', ContestPrintHandler, PERM.PERM_VIEW_CONTEST);
     ctx.Route('contest_manage', '/contest/:tid/management', ContestManagementHandler);
-    ctx.Route('contest_clarification', '/contest/:tid/clarification', ContestClarificationHandler);
     ctx.Route('contest_code', '/contest/:tid/code', ContestCodeHandler, PERM.PERM_VIEW_CONTEST);
     ctx.Route('contest_file_download', '/contest/:tid/file/:type/:filename', ContestFileDownloadHandler, PERM.PERM_VIEW_CONTEST);
     ctx.Route('contest_user', '/contest/:tid/user', ContestUserHandler, PERM.PERM_VIEW_CONTEST);

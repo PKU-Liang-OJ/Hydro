@@ -16,7 +16,9 @@ RUN apt-get -qq update && \
     golang \
     ruby \
     mono-runtime \
-    mono-mcs && \
+    mono-mcs \
+    libz3-dev \
+    python3-z3 && \
     chmod +x /root/entrypoint.sh && \
     # node is at /usr/local/bin but hydrojudge will find it at /usr/bin
     # so make a symlink to it

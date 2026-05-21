@@ -18,6 +18,8 @@
   {{ set(UiContext, 'getSubmissionsUrl', url('record_main', query={fullStatus:'true', pid:pdoc.docId, tid:tdoc.docId})) }}
   {{ set(UiContext, 'getRecordDetailUrl', url('record_detail', rid='{rid}', query={tid:tdoc.docId})) }}
   {{ set(UiContext, 'pretestConnUrl', "record-conn?pretest=1&uidOrName=" + handler.user._id + "&pid=" + pdoc.docId + "&domainId=" + handler.args.domainId + "&tid=" + tdoc.docId) }}
+{% elif tdoc %}
+  {{ set(UiContext, 'canViewRecord', false) }}
 {% else %}
   {{ set(UiContext, 'canViewRecord', true) }}
   {{ set(UiContext, 'postSubmitUrl', url('problem_submit', pid=pdoc.docId)) }}
@@ -75,7 +77,7 @@
         {% if tdoc and tdoc.pids|length <= 26 and tdoc.pids|length > 1 %}
           <div class="section__tools contest-problems">
             {% for pid in tdoc.pids -%}
-              {% set status = tsdoc.detail[pid].status %}
+              {% set status = tsdoc.detail[pid].status if tsdoc and tsdoc.detail and tsdoc.detail[pid] else null %}
               {% set pass = status == STATUS.STATUS_ACCEPTED %}
               {% set fail = status and not pass %}
               <a href="{{ url('problem_detail', pid=pid, query={tid:tdoc.docId}) }}"

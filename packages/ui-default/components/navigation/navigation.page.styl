@@ -144,6 +144,28 @@
   +mobile()
     display: none
 
+.nav__brand
+  display: block
+  box-sizing: border-box
+  margin: 0 rem(16px) 0 rem(5px)
+  padding: rem(0 8px 3px 0)
+  border-top: 3px solid transparent
+  line-height: rem($nav-item-height - 6)
+  color: #000
+  font-size: 22px
+  font-weight: 700
+  white-space: nowrap
+
+  &:visited, &:active
+    color: #000
+
+  &:hover
+    color: #000
+    text-decoration: none
+
+  +mobile()
+    display: none
+
 // For Mobile: show a slideout vertical arranged menu
 +mobile()
 

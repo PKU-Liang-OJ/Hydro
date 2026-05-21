@@ -124,7 +124,7 @@ class RichMediaHandler extends Handler {
       if (item.type === 'user') res.push(this.renderUser(domainId, item).catch(() => ''));
       else if (item.type === 'problem') res.push(this.renderProblem(domainId, item).catch(() => ''));
       else if (item.type === 'contest') res.push(this.renderContest(domainId, item).catch(() => ''));
-      else if (item.type === 'homework') res.push(this.renderHomework(domainId, item).catch(() => ''));
+      else if (item.type === 'homework') res.push('');
       else res.push('');
     }
     this.response.body = await Promise.all(res);

@@ -1,0 +1,9 @@
+.git
+.agents
+.codex
+node_modules
+**/node_modules
+.cache
+**/.cache
+install/docker/data
+language-server/.git

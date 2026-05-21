@@ -60,7 +60,9 @@ export async function apply(ctx: Context) {
             resolve(c);
         });
     });
-    const loadDir = async (dir: string) => Promise.all((await fs.readdir(dir)).filter((i) => i.endsWith('.ts'))
+    const disabledHandlers = new Set(['discussion.ts', 'homework.ts', 'training.ts']);
+    const loadDir = async (dir: string) => Promise.all((await fs.readdir(dir))
+        .filter((i) => i.endsWith('.ts') && !disabledHandlers.has(i))
         .map((h) => ctx.loader.reloadPlugin(path.resolve(dir, h), '')));
     await loadDir(path.resolve(__dirname, '..', 'handler'));
     await ctx.plugin(require('../service/migration').default);

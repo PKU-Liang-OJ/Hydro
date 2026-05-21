@@ -29,10 +29,16 @@ describe('App', () => {
         console.log('Application inited in %d ms', Date.now() - init);
     }, { timeout: 30000 });
 
-    const routes = ['/', '/p', '/contest', '/homework', '/user/1', '/training'];
+    const routes = ['/', '/p', '/contest', '/user/1'];
     for (const route of routes) {
         // eslint-disable-next-line ts/no-loop-func
         it(`GET ${route}`, () => agent.get(route).expect(200));
+    }
+
+    const disabledRoutes = ['/homework', '/training', '/discuss'];
+    for (const route of disabledRoutes) {
+        // eslint-disable-next-line ts/no-loop-func
+        it(`GET ${route} disabled`, () => agent.get(route).expect(404));
     }
 
     it('API user', async () => {
