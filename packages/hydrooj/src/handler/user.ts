@@ -30,6 +30,36 @@ import {
     Handler, param, post, Query, Types,
 } from '../service/server';
 
+const REGISTRATION_MAIL_DOMAIN = 'stu.pku.edu.cn';
+
+function getStudentMail(input: string, field = 'mail') {
+    const value = input.trim().toLowerCase();
+    const [studentId, domain, ...rest] = value.split('@');
+    if (
+        !studentId
+        || rest.length
+        || (domain && domain !== REGISTRATION_MAIL_DOMAIN)
+        || !/^[a-z0-9._-]+$/.test(studentId)
+    ) {
+        throw new ValidationError(
+            field,
+            null,
+            'Please enter a valid PKU student ID.',
+        );
+    }
+    const mail = `${studentId}@${REGISTRATION_MAIL_DOMAIN}`;
+    if (!Types.Email[1](mail)) throw new ValidationError(field);
+    return mail;
+}
+
+function tryGetStudentMail(input: string) {
+    try {
+        return getStudentMail(input, 'uname');
+    } catch {
+        return null;
+    }
+}
+
 async function successfulAuth(this: Handler, udoc: User) {
     if (udoc._id !== 0) await user.setById(udoc._id, { loginat: new Date(), loginip: this.request.ip });
     this.context.HydroContext.user = udoc;
@@ -63,7 +93,9 @@ class UserLoginHandler extends Handler {
         tfa = '', authnChallenge = '', judge = false,
     ) {
         if (!judge && !system.get('server.login')) throw new BuiltinLoginError();
-        let udoc = await user.getByEmail(domainId, uname);
+        const studentMail = tryGetStudentMail(uname);
+        let udoc = studentMail ? await user.getByEmail(domainId, studentMail) : null;
+        udoc ||= await user.getByEmail(domainId, uname);
         udoc ||= await user.getByUname(domainId, uname);
         if (judge && !system.get('server.login') && !udoc?.hasPriv(PRIV.PRIV_JUDGE)) throw new BuiltinLoginError();
         if (!udoc) throw new UserNotFoundError(uname);
@@ -239,10 +271,11 @@ export class UserRegisterHandler extends Handler {
         this.response.template = 'user_register.html';
     }
 
-    @post('mail', Types.Email)
-    async post({ }, mail: string) {
+    @post('mail', Types.String)
+    async post({ }, mailInput: string) {
+        const mail = getStudentMail(mailInput);
         if (await user.getByEmail('system', mail)) throw new UserAlreadyExistError(mail);
-        const mailDomain = mail.split('@')[1];
+        const mailDomain = mail.split('@')[1].toLowerCase();
         if (await BlackListModel.get(`mail::${mailDomain}`)) throw new BlacklistedError(mailDomain);
         await Promise.all([
             this.limitRate('send_mail', 60, 1, mail),
@@ -334,8 +367,9 @@ class UserLostPassHandler extends Handler {
         this.response.template = 'user_lostpass.html';
     }
 
-    @param('mail', Types.Email)
-    async post(domainId: string, mail: string) {
+    @param('mail', Types.String)
+    async post(domainId: string, mailInput: string) {
+        const mail = getStudentMail(mailInput);
         if (!system.get('smtp.user')) throw new SystemError('Cannot send mail');
         const udoc = await user.getByEmail('system', mail);
         if (!udoc) throw new UserNotFoundError(mail);
@@ -419,9 +453,17 @@ class UserDetailHandler extends Handler {
         const tsdocs = await ContestModel.getMultiStatus(domainId, { uid, attend: { $exists: true } }).project({ docId: 1 }).toArray();
         const tdocs = await ContestModel.getMulti(domainId, { docId: { $in: tsdocs.map((i) => i.docId) } })
             .project({ docId: 1, title: 1, rule: 1 }).sort({ _id: -1 }).toArray();
+        const canViewPrivateInfo = isSelfProfile || this.user.hasPerm(PERM.PERM_VIEW_USER_PRIVATE_INFO);
+        const udocForUiContext = canViewPrivateInfo
+            ? udoc
+            : {
+                ...udoc,
+                mail: undefined,
+                avatar: udoc.avatar?.startsWith('gravatar:') ? undefined : udoc.avatar,
+            };
         this.response.template = 'user_detail.html';
         this.response.body = {
-            isSelfProfile, udoc, sdoc, pdocs, tags, tdocs,
+            isSelfProfile, udoc, udocForUiContext, sdoc, pdocs, tags, tdocs,
         };
         if (this.user.hasPerm(PERM.PERM_VIEW_PROBLEM_SOLUTION)) {
             const psdocs = await SolutionModel.getByUser(domainId, uid).limit(10).toArray();

@@ -2,7 +2,7 @@
 {% import "components/problem.html" as problem with context %}
 {% extends "layout/basic.html" %}
 {% block content %}
-{{ set(UiContext, 'udoc', udoc) }}
+{{ set(UiContext, 'udoc', udocForUiContext) }}
 <style>
   .user-profile-bg {
     background-image: url("{{ udoc.backgroundImage }}"), url("/components/profile/backgrounds/1.jpg");
@@ -45,7 +45,7 @@
                 <a class="profile-header__contact-item" href="{{ url('home_messages', query={target:udoc._id}) }}" target="_blank" data-tooltip="{{ _('Send Message') }}">
                   <span class="icon icon-comment--multiple"></span>
                 </a>
-              {% if udoc['mail'] %}
+              {% if udoc['mail'] and (isSelfProfile or handler.user.hasPerm(perm.PERM_VIEW_USER_PRIVATE_INFO)) %}
                 <a class="profile-header__contact-item" href="javascript:;" data-copy="{{ udoc['mail'] | base64_encode }}" data-tooltip="{{ _('Copy Email') }}">
                   <span class="icon icon-mail"></span>
                 </a>

@@ -1,25 +1,34 @@
 {% extends "layout/basic.html" %}
 {% block content %}
-<div class="error__container clearfix">
-  <div class="error__icon-container">
-    <div class="error__twd2"></div>
-  </div>
-  <div class="error__text-container">
-    <h1>{{ _('Oops!') }}</h1>
+<div class="section">
+  <div class="section__body typo">
+    <h1>{{ _('The request could not be completed') }}</h1>
     <p>{{ _(error.message).formatFromArray(error.params) }}</p>
-    <p>{{ _('Technical Information') }}:</p>
-    <p>{{ _('Type') }}: {{ error.name }}</p>
-    <p>{{ _('Arguments') }}:
-      <ol>
-      {%- for param in error.params -%}
-        {% if instanceof(param, UserFacingError) %}
-          <li>{{ _(param.message).formatFromArray(param.params)}}</li>
-        {% else %}
-          <li>{{ param }}</li>
-        {% endif %}
-      {%- endfor -%}
-      </ol>
+    <p class="supplementary">
+      {{ _('Please check the information you entered, or return to the previous page and try again.') }}
     </p>
+    <p>
+      <a class="rounded primary button" href="javascript:history.back()">{{ _('Back') }}</a>
+      <a class="rounded button" href="{{ url('homepage') }}">{{ _('Home') }}</a>
+    </p>
+    {% if handler.user.hasPriv(PRIV.PRIV_EDIT_SYSTEM) %}
+      <details>
+        <summary>{{ _('Technical Information') }}</summary>
+        <p>{{ _('Type') }}: {{ error.name }}</p>
+        {% if error.params and error.params.length %}
+          <p>{{ _('Arguments') }}:</p>
+          <ol>
+          {%- for param in error.params -%}
+            {% if instanceof(param, UserFacingError) %}
+              <li>{{ _(param.message).formatFromArray(param.params)}}</li>
+            {% else %}
+              <li>{{ param }}</li>
+            {% endif %}
+          {%- endfor -%}
+          </ol>
+        {% endif %}
+      </details>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

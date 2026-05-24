@@ -55,7 +55,7 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      - "8080:80" # In docker mode, change THIS port instead of port in system settings!
+      - "127.0.0.1:18080:80" # Local reverse proxy entrypoint for HTTPS frontends.
 
   oj-judge:
     build: ./judge
