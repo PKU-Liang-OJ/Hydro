@@ -13,7 +13,11 @@ if [ ! -f "$ROOT/first" ]; then
 
     hydrooj cli user create systemjudge@systemjudge.local judge examplepassword 2
     hydrooj cli user setJudge 2
-    hydrooj cli system set server.host 0.0.0.0
 fi
+
+# In Docker, nginx reaches the backend through the container network. Keep this
+# outside the first-run block so a rebuilt Mongo volume cannot reset the server
+# to loopback-only while the backend volume still has the first-run marker.
+hydrooj cli system set server.host 0.0.0.0
 
 pm2-runtime start hydrooj
