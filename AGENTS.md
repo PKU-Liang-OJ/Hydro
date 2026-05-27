@@ -16,6 +16,10 @@ the compose file at `install/docker/docker-compose.yml`.
   when deployment validation is required.
 - Never commit runtime data or local judge secrets. In particular, do not commit
   `install/docker/data/**` or `install/docker/judge/judge.yaml`.
+- Never commit problem packages, statements, solutions, generated problem assets,
+  or test data unless the user explicitly asks for a private distribution commit.
+  In particular, do not commit `problem-packages/**`; keep assignment test cases
+  out of the repository so students cannot inspect hidden samples.
 - Preserve user changes already present in the worktree. Inspect before editing
   and do not revert unrelated changes.
 
@@ -85,4 +89,3 @@ Practical defaults for this repo:
 
 The local Hydro documentation snapshot lives in `.agents/hydro-docs`.
 Start with `.agents/hydro-docs/INDEX.md` for fast topic lookup.
-
